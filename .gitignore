@@ -1,0 +1,21 @@
+.tools/
+.cache/
+.DS_Store
+dist/
+build/
+**/.build/
+**/.gradle/
+**/build/
+android/local.properties
+vendor/scs-sdk/
+*.log
+__pycache__/
+*.pyc
+
+# Local credentials and Android signing material
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+key.properties

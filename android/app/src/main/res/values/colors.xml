@@ -1,0 +1,10 @@
+<resources>
+    <color name="surface">#101923</color>
+    <color name="surface_variant">#25313D</color>
+    <color name="on_surface">#F5F7FA</color>
+    <color name="on_surface_variant">#BDCAD8</color>
+    <color name="primary">#9CCAFF</color>
+    <color name="on_primary">#002D52</color>
+    <color name="brake">#FFABA9</color>
+    <color name="gas">#9CCAFF</color>
+</resources>
