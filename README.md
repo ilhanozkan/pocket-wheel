@@ -4,6 +4,67 @@ Use an Android phone as a steering wheel, gas/brake pedals, and gear selector fo
 
 The Android app uses fused accelerometer/gyroscope orientation. The Mac companion authenticates and forwards controls to an SCS Input SDK plugin inside ETS2. It does not install a virtual joystick or require a kernel extension.
 
+## How it works
+
+### Big picture
+
+```mermaid
+flowchart LR
+    subgraph Phone["📱 Android phone"]
+        S["Gyroscope + accelerometer<br/>(tilt = steering)"]
+        T["Touch pedals + D/N/R buttons"]
+        A["Pocket Wheel app<br/>sends 60 frames per second"]
+        S --> A
+        T --> A
+    end
+
+    subgraph Mac["💻 Mac"]
+        C["Pocket Wheel.app<br/>checks key, session, order"]
+        subgraph Game["Euro Truck Simulator 2"]
+            P["pocketwheel.dylib<br/>SCS input plugin"]
+            G["Game sees a device<br/>called 'Pocket Wheel'"]
+            P --> G
+        end
+        C -- "loopback UDP :26761" --> P
+    end
+
+    A -- "Wi-Fi UDP :26760<br/>HMAC-signed" --> C
+    C -. "ACK (latency)" .-> A
+```
+
+The phone turns tilt and thumb input into numbers, signs them with the pairing key, and sends them over local Wi-Fi. The Mac app drops anything forged, old, or out of order, then hands clean values to a plugin running inside the game. ETS2 sees an ordinary input device you can bind in **Options → Controls**.
+
+### Pairing and driving
+
+```mermaid
+sequenceDiagram
+    participant P as Phone
+    participant M as Mac app
+    participant G as ETS2 plugin
+    P->>M: Hello + random nonce (signed)
+    M-->>P: New session ID (signed)
+    Note over P,M: Session starts disarmed
+    P->>M: You tap Arm
+    loop 60 times per second
+        P->>M: steering, gas, brake, buttons
+        M-->>P: ACK (shows round-trip latency)
+        M->>G: forward the same values
+    end
+```
+
+### Safety: when does input stop?
+
+```mermaid
+stateDiagram-v2
+    [*] --> Disarmed
+    Disarmed --> Armed: Arm tapped
+    Armed --> Disarmed: Stop, Center,<br/>app hidden, disconnect
+    Armed --> Released: 300 ms without data
+    Released --> Disarmed: pedals zeroed,<br/>wheel re-centered
+```
+
+Arming also requires **Enable controls** on the Mac. Driving never resumes on its own: after any interruption you must tap **Arm** again. The plugin runs the same 300 ms watchdog, so input is released even if the Mac app crashes. Details: [PROTOCOL.md](PROTOCOL.md).
+
 ## Start with the built apps
 
 Build artifacts are in `dist/`:
